@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AKRUM Secure Encryption Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0b1e36;
+            color: #f0f0f0;
+            padding: 40px;
+            text-align: center;
+        }
+        h1, h2 {
+            color: #00d4ff;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background-color: #0078d7;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        img.logo {
+            height: 80px;
+            margin-bottom: 30px;
+            filter: drop-shadow(2px 2px 4px #000);
+        }
+    </style>
+</head>
+<body>
+    <img src="https://imgur.com/06YKRdx.png" alt="AKRUM Logo" class="logo" />
+    <h1>AKRUM Secure Encryption Demo</h1>
+
+    <div class="section">
+        <h2>Encrypt a File</h2>
+        <input type="file" id="encryptFile" />
+        <button onclick="generateAndEncrypt()">Encrypt File</button>
+        <p id="encryptStatus"></p>
+        <p><strong>Encryption Key:</strong></p>
+        <input type="text" id="generatedKey" readonly />
+        <button onclick="copyKey()">Copy Key</button>
+    </div>
+
+    <div class="section">
+        <h2>Decrypt a File</h2>
+        <input type="file" id="decryptFile" />
+        <input type="text" id="decryptKey" placeholder="Paste encryption key" />
+        <button onclick="decryptFile()">Decrypt File</button>
+        <p id="decryptStatus"></p>
+    </div>
+
+    <script>
+        function xorEncryptDecrypt(data, key) {
+            const keyBytes = new TextEncoder().encode(key);
+            return data.map((byte, i) => byte ^ keyBytes[i % keyBytes.length]);
+        }
+
+        function generateKey(length = 32) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            const array = new Uint8Array(length);
+            window.crypto.getRandomValues(array);
+            for (let i = 0; i < length; i++) {
+                result += charset[array[i] % charset.length];
+            }
+            return result;
+        }
+
+        function generateAndEncrypt() {
+            const fileInput = document.getElementById('encryptFile');
+            const status = document.getElementById('encryptStatus');
+            const keyField = document.getElementById('generatedKey');
+
+            if (!fileInput.files.length) {
+                alert('Please select a file.');
+                return;
+            }
+
+            const key = generateKey();
+            keyField.value = key;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const data = new Uint8Array(reader.result);
+                const encrypted = xorEncryptDecrypt(data, key);
+                const blob = new Blob([encrypted]);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "ENCRYPTED_" + file.name;
+                a.click();
+                URL.revokeObjectURL(url);
+                status.textContent = "File encrypted successfully!";
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function copyKey() {
+            const keyField = document.getElementById('generatedKey');
+            keyField.select();
+            keyField.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(keyField.value).then(() => {
+                alert("Key copied to clipboard!");
+            });
+        }
+
+        function decryptFile() {
+            const fileInput = document.getElementById('decryptFile');
+            const key = document.getElementById('decryptKey').value;
+            const status = document.getElementById('decryptStatus');
+
+            if (!fileInput.files.length || !key) {
+                alert('Please select a file and paste the encryption key.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const data = new Uint8Array(reader.result);
+                const decrypted = xorEncryptDecrypt(data, key);
+                const blob = new Blob([decrypted]);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "DECRYPTED_" + file.name.replace("ENCRYPTED_", "");
+                a.click();
+                URL.revokeObjectURL(url);
+                status.textContent = "File decrypted successfully!";
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
