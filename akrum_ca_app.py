@@ -93,5 +93,5 @@ with tab2:
 
 st.markdown("""
 <hr style='margin-top: 50px;'>
-<p style='text-align: center; color: grey;'>© 2025 AKRUM Technologies. All rights reserved.</p>
+<p style='text-align: center; color: grey;'>© 2025 AKRUM. All rights reserved.</p>
 """, unsafe_allow_html=True)
